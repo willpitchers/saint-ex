@@ -5,13 +5,13 @@
 from Bio import Seq
 
 
-# path to database files
-stxDB = "database_files/stxDB"
+# path to assembly files
 assemblydir = "/home/seq/MDU/QC/"
 
 
 # variable assignment
-ACCS = [ i.split('\t')[1].strip() for i in open("stx_gene_accessions.tab", 'r' ).readlines() ]
+MDUIDs = [ i.strip() for i in open( "input.list", 'r' ).readlines() ]
+ACCS = [ i.split('\t')[1].strip() for i in open( "stx_gene_accessions.tab", 'r' ).readlines() ]
 DBfiles = [ "nhr", "nin", "nsq" ]
 
 
@@ -19,9 +19,14 @@ rule all:
 	input:
 		#"{OUTFILENAME}.csv",
 		expand( "stxSeq/{accs}.fa", accs = ACCS ),
-		expand( "db_files/stxDB.{DBF}", DBF = DBfiles )
+		expand( "db_files/stxDB.{DBF}", DBF = DBfiles ),
+		expand( "matches/{mduids}_matches.fa", mduids = MDUIDs ),
+		expand( "matches/{mduids}_hits.fa", mduids = MDUIDs ),
+ 		"outfile.tab"
+		
 
 
+# check that 
 rule check_seqs:
 	input:
 		"stx_gene_accessions.tab"
@@ -61,12 +66,42 @@ rule make_primers:
 		python3 primerise.py > {output}
 		"""
 
-# rule extract_genes:
-# 	input:
-# 		""
-# 	output:
-# 		""
-# 	shell:
-# 		"""
-# 		isPcr -flipReverse assemblydir/2007-21593/contigs.fa stxSeq/stx_allele_primers.fasta {output}
-# 		"""
+
+rule extract_genes:
+	input:
+		"stxSeq/stx_allele_primers.fasta",
+		"input.list"
+	output:
+		"matches/{mduids}_matches.fa"
+	shell:
+		"""
+		mkdir -p matches
+		isPcr -flipReverse {assemblydir}/{wildcards.mduids}/contigs.fa stxSeq/stx_allele_primers.fasta {output}
+		"""
+
+
+rule blasting:
+	input:
+		"matches/{mduids}_matches.fa"
+	output:
+		"matches/{mduids}_hits.fa"
+	shell:
+		"""
+		blastn -db db_files/stxDB -query {input} -perc_identity 95 -outfmt '6' > {output}
+		"""
+
+
+rule tabulate:
+	input:
+		expand( "matches/{mduids}_hits.fa", mduids = MDUIDs )
+	output:
+		"outfile.tab"
+	shell:
+		"""
+		echo "query_acc\tsubject_acc\t%_identity\talignment_length\t\mismatches\tgap_opens\tq_start\tq_end\ts_start\ts_end\tevalue\tbit_score" > {output}
+		cat {input} >> {output}
+		"""
+
+
+
+
