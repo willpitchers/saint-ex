@@ -10,35 +10,46 @@ stxDB = "database_files/stxDB"
 assemblydir = "/home/seq/MDU/QC/"
 
 
+# variable assignment
+ACCS = [ i.split('\t')[1].strip() for i in open("stx_gene_accessions.tab", 'r' ).readlines() ]
+DBfiles = [ "nhr", "nin", "nsq" ]
+
 
 rule all:
 	input:
-		"{OUTFILENAME}.csv"
+		#"{OUTFILENAME}.csv",
+		expand( "stxSeq/{accs}.fa", accs = ACCS ),
+		expand( "db_files/stxDB.{DBF}", DBF = DBfiles )
+
+
+rule check_seqs:
+	input:
+		"stx_gene_accessions.tab"
+	output:
+		"stxSeq/{accs}.fa"
+	shell:
+		"""
+		mkdir -p stxSeq && cd stxSeq
+		ncbi-acc-download -m nucleotide -F fasta {wildcards.accs}
+		cd ..
+		"""
 
 
 rule build_db:
 	input:
-		"stxSeq/AF043627.fa",
-		"stxSeq/AJ010730.fa",
-		"stxSeq/AY170851.fa",
-		"stxSeq/AY286000.fa",
-		"stxSeq/DQ059012.fa",
-		"stxSeq/L11079.fa",
-		"stxSeq/M19473.fa",
-		"stxSeq/M21534.fa",
-		"stxSeq/Z36901.fa",
-		"stxSeq/Z37725.fa"
+		expand( "stxSeq/{accs}.fa", accs = ACCS )
 	output:
-		"database_files/stxDB.nhr",
-		"database_files/stxDB.nin",
-		"database_files/stxDB.nsq",
+		"db_files/stxDB.nhr",
+		"db_files/stxDB.nin",
+		"db_files/stxDB.nsq",
 		"stxSeq/all_stx_seq.fasta"
 	shell:
 		"""
 		mkdir -p database_files
-		cat {input} > stxSeq/all_stx_seq.fasta
-		makeblastdb -dbtype 'nucl' -in stxSeq/all_stx_seq.fasta -out database_files/stxDB
+		cat {input} > {output[3]}
+		makeblastdb -dbtype 'nucl' -in stxSeq/all_stx_seq.fasta -out db_files/stxDB
 		"""
+
 
 rule make_primers:
 	input:
@@ -50,12 +61,12 @@ rule make_primers:
 		python3 primerise.py > {output}
 		"""
 
-rule extract_genes:
-	input:
-		""
-	output:
-		""
-	shell:
-		"""
-		isPcr -flipReverse assemblydir/2007-21593/contigs.fa stxSeq/stx_allele_primers.fasta {output}
-		"""
+# rule extract_genes:
+# 	input:
+# 		""
+# 	output:
+# 		""
+# 	shell:
+# 		"""
+# 		isPcr -flipReverse assemblydir/2007-21593/contigs.fa stxSeq/stx_allele_primers.fasta {output}
+# 		"""
