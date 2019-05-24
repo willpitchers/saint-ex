@@ -8,7 +8,7 @@ if (($# == 0)); then
 	echo Please provide MDU IDs or assemblies.
 fi
 
-rm seq_path.list seq_name.list
+rm seq_path.list seq_name.list outfile.tab
 
 
 ## command line help
