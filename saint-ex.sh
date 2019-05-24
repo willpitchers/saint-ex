@@ -8,6 +8,7 @@ if (($# == 0)); then
 	echo Please provide MDU IDs or assemblies.
 fi
 
+rm seq_path.list seq_name.list
 
 
 ## command line help
@@ -15,10 +16,12 @@ display_help() {
 	echo "The What:"
 	echo "	this tool extracts stx genes and IDs alleles"
     echo "The How:"
-    echo "	bash saint-ex.sh [options] <input_file.txt>" >&2
+    echo "	bash saint-ex.sh [options] <input_file.txt>"
+    echo "			Input should be: seq-ID <tab> /path/to/seq.fa"
+    echo "			(path can be skipped if using MDU IDs - see below)"
     echo "Options:"
     echo "   -h			show this help screen"
-    echo "   -a			treat input as paths to assemblies (default is to search /home/seq/MDU/QC)"
+    echo "   -m			input list of MDU ID no.s only"
     echo "   -r			check requirements are met"
     echo
     exit 1
@@ -38,13 +41,13 @@ check_reqs() {
 
 
 # parse non-zero input: help flag
-while getopts ":har" opt; do
+while getopts ":hmr" opt; do
   case $opt in
     h)
       display_help >&2
       ;;
-    a)
-      ass_path="TRUE"
+    m)
+      mdu_path="TRUE"
       ;;
     r)
      check_reqs >&2
@@ -56,22 +59,30 @@ while getopts ":har" opt; do
 done
 
 
+## writing a config.yaml for snakemake to eat?
+# write_config_mdu() {
+# 	echo 										>> config.yaml
+# 	echo 'assemblydir = "/home/seq/MDU/QC/"'	>> config.yaml
+# }
+
 
 # make input file ready for `Snakefile` input
-if [ ! -z ${ass_path} ] ; then
-	echo ${ass_path}
+if [ ! -z ${mdu_path} ] ; then
+	write_config_mdu
 	INFILE=$2
-	cp ${INFILE} input.list
+	cp ${INFILE} seq_name.list
+	cat ${INFILE} | while read i ; do
+		echo "/home/seq/MDU/QC/"${i}"/contigs.fa" >> seq_path.list
+	done	
 else
 	INFILE=$1
-	cat ${INFILE} | while read i ; do
-		echo "/home/seq/MDU/QC/"${i}"/contigs.fa" >> input.list
-	done
+	cut -f 1 ${INFILE} > seq_name.list
+	cut -f 2 ${INFILE} > seq_path.list
 fi
 
 ### Run the thing!
 
-snakemake
+# snakemake
 
 
 

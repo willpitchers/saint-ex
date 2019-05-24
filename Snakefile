@@ -5,13 +5,16 @@
 
 from Bio import Seq
 
+# config: "config.yaml"
 
 # path to assembly files
-assemblydir = "/home/seq/MDU/QC/"
+# assemblydir = "/home/seq/MDU/QC/"
+# ass_name = "contigs.fa"
 
 
 # variable assignment
-MDUIDs = [ i.strip() for i in open( "input.list", 'r' ).readlines() ]
+SEQIDs = [ i.strip() for i in open( "seq_name.list", 'r' ).readlines() ]
+SEQPATHS = [ i.strip() for i in open( "seq_path.list", 'r' ).readlines() ]
 ACCS = [ i.split('\t')[1].strip() for i in open( "stx_gene_accessions.tab", 'r' ).readlines() ]
 DBfiles = [ "nhr", "nin", "nsq" ]
 
@@ -20,8 +23,8 @@ rule all:
 	input:
 		expand( "stxSeq/{accs}.fa", accs = ACCS ),
 		expand( "db_files/stxDB.{DBF}", DBF = DBfiles ),
-		expand( "matches/{mduids}_matches.fa", mduids = MDUIDs ),
-		expand( "matches/{mduids}_hits.fa", mduids = MDUIDs ),
+		expand( "matches/{seqids}_matches.fa", seqids = SEQIDs ),
+		expand( "matches/{seqids}_hits.fa", seqids = SEQIDs ),
  		"outfile.tab"
 		
 
@@ -70,21 +73,21 @@ rule make_primers:
 rule extract_genes:
 	input:
 		"stxSeq/stx_allele_primers.fasta",
-		"input.list"
+		"seq_name.list"
 	output:
-		"matches/{mduids}_matches.fa"
+		"matches/{seqids}_matches.fa"
 	shell:
 		"""
 		mkdir -p matches
-		isPcr -flipReverse {assemblydir}/{wildcards.mduids}/contigs.fa stxSeq/stx_allele_primers.fasta {output}
+		isPcr -flipReverse {assemblydir}/{wildcards.seqids}/contigs.fa stxSeq/stx_allele_primers.fasta {output}
 		"""
 
 # `blast` extracted stx gene seq.s against stx-allele DB
 rule blasting:
 	input:
-		"matches/{mduids}_matches.fa"
+		"matches/{seqids}_matches.fa"
 	output:
-		"matches/{mduids}_hits.fa"
+		"matches/{seqids}_hits.fa"
 	shell:
 		"""
 		blastn -db db_files/stxDB -query {input} -perc_identity 95 -outfmt '6' > {output}
@@ -93,7 +96,7 @@ rule blasting:
 # turn multiple `blast` results files into a labelled table
 rule tabulate:
 	input:
-		expand( "matches/{mduids}_hits.fa", mduids = MDUIDs )
+		expand( "matches/{seqids}_hits.fa", seqids = SEQIDs )
 	output:
 		"outfile.tab"
 	shell:
