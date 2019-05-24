@@ -9,6 +9,7 @@ if (($# == 0)); then
 fi
 
 
+
 ## command line help
 display_help() {
 	echo "The What:"
@@ -43,7 +44,7 @@ while getopts ":har" opt; do
       display_help >&2
       ;;
     a)
-      export path_file=$1
+      ass_path="TRUE"
       ;;
     r)
      check_reqs >&2
@@ -56,19 +57,21 @@ done
 
 
 
-
-if [ -n ${path_file} ]; then
-	echo MDUIDs
-elif [ ${path_file} ]; then
-	echo paths
+# make input file ready for `Snakefile` input
+if [ ! -z ${ass_path} ] ; then
+	echo ${ass_path}
+	INFILE=$2
+	cp ${INFILE} input.list
+else
+	INFILE=$1
+	cat ${INFILE} | while read i ; do
+		echo "/home/seq/MDU/QC/"${i}"/contigs.fa" >> input.list
+	done
 fi
 
+### Run the thing!
 
-
-
-
-
-# check input IDs match up to reads?
+snakemake
 
 
 

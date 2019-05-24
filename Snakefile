@@ -1,4 +1,5 @@
 
+##### SAINT-EX SNAKEFILE #####
 ## The plan here is for a tool that can accept assemblies on the command line and output 
 ## a spreadsheet of allele-specific matches for *stx* gene components
 
@@ -17,7 +18,6 @@ DBfiles = [ "nhr", "nin", "nsq" ]
 
 rule all:
 	input:
-		#"{OUTFILENAME}.csv",
 		expand( "stxSeq/{accs}.fa", accs = ACCS ),
 		expand( "db_files/stxDB.{DBF}", DBF = DBfiles ),
 		expand( "matches/{mduids}_matches.fa", mduids = MDUIDs ),
@@ -85,7 +85,7 @@ rule blasting:
 		"matches/{mduids}_matches.fa"
 	output:
 		"matches/{mduids}_hits.fa"
-		shell:
+	shell:
 		"""
 		blastn -db db_files/stxDB -query {input} -perc_identity 95 -outfmt '6' > {output}
 		"""
