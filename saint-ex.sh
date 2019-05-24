@@ -6,9 +6,10 @@
 # fail politely if no input provided
 if (($# == 0)); then
 	echo Please provide MDU IDs or assemblies.
+	exit
 fi
 
-rm seq_path.list seq_name.list outfile.tab
+rm -f seq_path.list seq_name.list outfile.tab
 
 
 ## command line help
