@@ -26,7 +26,7 @@ rule all:
 		
 
 
-# check that 
+# check that stx-allele sequences are present and download them if not
 rule check_seqs:
 	input:
 		"stx_gene_accessions.tab"
@@ -39,7 +39,7 @@ rule check_seqs:
 		cd ..
 		"""
 
-
+# check that stx-allele sequence database is present and build it if not
 rule build_db:
 	input:
 		expand( "stxSeq/{accs}.fa", accs = ACCS )
@@ -55,7 +55,7 @@ rule build_db:
 		makeblastdb -dbtype 'nucl' -in stxSeq/all_stx_seq.fasta -out db_files/stxDB
 		"""
 
-
+# check that primer file is present and build it if not
 rule make_primers:
 	input:
 		"stxSeq/all_stx_seq.fasta"
@@ -66,7 +66,7 @@ rule make_primers:
 		python3 primerise.py > {output}
 		"""
 
-
+# use `isPcr` to pull out the sequence of any stx genes in the sample isolates
 rule extract_genes:
 	input:
 		"stxSeq/stx_allele_primers.fasta",
@@ -79,18 +79,18 @@ rule extract_genes:
 		isPcr -flipReverse {assemblydir}/{wildcards.mduids}/contigs.fa stxSeq/stx_allele_primers.fasta {output}
 		"""
 
-
+# `blast` extracted stx gene seq.s against stx-allele DB
 rule blasting:
 	input:
 		"matches/{mduids}_matches.fa"
 	output:
 		"matches/{mduids}_hits.fa"
-	shell:
+		shell:
 		"""
 		blastn -db db_files/stxDB -query {input} -perc_identity 95 -outfmt '6' > {output}
 		"""
 
-
+# turn multiple `blast` results files into a labelled table
 rule tabulate:
 	input:
 		expand( "matches/{mduids}_hits.fa", mduids = MDUIDs )
@@ -101,7 +101,4 @@ rule tabulate:
 		echo "query_acc\tsubject_acc\t%_identity\talignment_length\t\mismatches\tgap_opens\tq_start\tq_end\ts_start\ts_end\tevalue\tbit_score" > {output}
 		cat {input} >> {output}
 		"""
-
-
-
 
