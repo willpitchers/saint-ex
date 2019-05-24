@@ -25,6 +25,7 @@ rule all:
 		expand( "db_files/stxDB.{DBF}", DBF = DBfiles ),
 		expand( "matches/{seqids}_matches.fa", seqids = SEQIDs ),
 		expand( "matches/{seqids}_hits.fa", seqids = SEQIDs ),
+		expand( "{seqpaths}", seqpaths = SEQPATHS ),
  		"outfile.tab"
 		
 
@@ -73,13 +74,14 @@ rule make_primers:
 rule extract_genes:
 	input:
 		"stxSeq/stx_allele_primers.fasta",
+		"seq_path.list",
 		"seq_name.list"
 	output:
 		"matches/{seqids}_matches.fa"
 	shell:
 		"""
 		mkdir -p matches
-		isPcr -flipReverse {assemblydir}/{wildcards.seqids}/contigs.fa stxSeq/stx_allele_primers.fasta {output}
+		isPcr -flipReverse {input[1]} stxSeq/stx_allele_primers.fasta {output}
 		"""
 
 # `blast` extracted stx gene seq.s against stx-allele DB

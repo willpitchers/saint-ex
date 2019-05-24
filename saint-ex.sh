@@ -68,7 +68,6 @@ done
 
 # make input file ready for `Snakefile` input
 if [ ! -z ${mdu_path} ] ; then
-	write_config_mdu
 	INFILE=$2
 	cp ${INFILE} seq_name.list
 	cat ${INFILE} | while read i ; do
@@ -82,7 +81,7 @@ fi
 
 ### Run the thing!
 
-# snakemake
+snakemake
 
 
 
